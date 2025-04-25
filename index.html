@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clima segons comarca</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 2rem auto;
+      background-color: #222;
+      color: #eee;
+      padding: 1rem;
+    }
+  
+    h1 {
+      color: #6bc1ff;
+      border-bottom: 1px solid #444;
+      padding-bottom: 0.5rem;
+    }
+  
+    label,
+    select,
+    .resultat {
+      display: block;
+      margin: 1rem 0;
+    }
+  
+    select {
+      background-color: #333;
+      color: #fff;
+      padding: 0.5rem;
+      border: 1px solid #555;
+      border-radius: 4px;
+      width: 100%;
+    }
+  
+    .resultat {
+      background-color: #333;
+      padding: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid #6bc1ff;
+    }
+  
+    .resultat span {
+      font-weight: bold;
+    }
+  
+    #tmin,
+    #tmin2 {
+      color: #6bc1ff;
+    }
+  
+    #tmax,
+    #tmax2 {
+      color: #ff6b6b;
+    }
+  
+    #dataPrevisio,
+    #dataPrevisio2 {
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Pronòstic de temperatura de Catalunya</h1>
+
+
+  <label for="comarques">Selecciona la teva comarca:</label>
+  <!-- Select que contendrá las comarcas-->
+  <select id="comarques">
+
+    <!-- Opción a seleccionar -->
+    <option value="">Buscar comarca..</option>
+  </select>
+
+  <!-- Resultado a mostrar -->
+  <div class="resultat" id="diaSeleccionat" style="display:none;">
+
+    <h2>Previsió meteorològica</h2><br>
+    <p>Data: <span id="dataPrevisio"></span></p>
+    <p>Temperatura mínima: <span id="tmin"></span> °C</p>
+    <p>Temperatura màxima: <span id="tmax"></span> °C</p>
+    <br><br>
+
+    <p>Data: <span id="dataPrevisio2"></span></p>
+    <p>Temperatura mínima: <span id="tmin2"></span> °C</p>
+    <p>Temperatura màxima: <span id="tmax2"></span> °C</p>
+  </div>
+
+  <script>
+    // Espera a que el DOM esté listo
+    $(document).ready(function () {
+
+      // URL de la API
+      const API_URL = 'https://static-m.meteo.cat/content/opendata/ctermini_comarcal.xml';
+
+      // Función que obtiene el XML de la API y lo convierte a un XMLDocument usando jQuery
+      function fetchXML() {
+
+        // Realiza una petición AJAX a la API
+        return $.ajax({
+          url: API_URL,
+          type: 'GET',
+          dataType: 'xml'
+        });
+      }
+
+      // 1) Cargar la lista de comarcas en el select
+      function cargarComarques() {
+
+        // Llamar a la función fetchXML para obtener el XML
+        fetchXML().done(function (xml) {
+
+          // Cuando obtenemos el XML con éxito, iteramos sobre los elementos 'comarca'
+          $(xml).find('comarca').each(function () {
+
+            // Obtener el ID y el NOMCOMARCA de cada comarca 
+            const id = $(this).attr('id');
+            const nom = $(this).attr('nomCOMARCA');
+
+            // Añadirlo como una opción en el select
+            $('#comarques').append($('<option>', {
+              value: id,
+              text: nom
+            }));
+          });
+
+          // Si ocurre un error durante la petición AJAX, se ejecuta la función fail
+        }).fail(function (error) {
+
+          // Mostrar error si es que falla la petición (la carga de comarques)
+          alert('Error carregant les comarques: ' + error.statusText);
+        });
+      }
+
+      // 2) Maneja el evento al cambiar la selección actual del select
+      $('#comarques').on('change', function () {
+
+        // Obtener el ID de la comarca seleccionada
+        const selId = $(this).val();
+
+        // Obtener el div para mostrar los resultados
+        const resultDiv = $('#diaSeleccionat');
+
+        // Si no hay una comarca seleccionada
+        if (!selId) {
+
+          // Ocultar el div de resultados
+          resultDiv.hide();
+          return;
+        }
+
+        // Ahora se realiza otra petición AJAX para obtener las temperaturas de la comarca seleccionada
+        fetchXML().done(function (xml) {
+
+          // Se busca el elemento de PREDICCIÓ específico para la comarca seleccionada 
+          const pred = $(xml).find('prediccio[idcomarca="' + selId + '"]');
+
+          // Obtenemos los elementos VARIABLE que contienen las predicciones
+          const variables = $(pred).find('variable');
+
+          // Extraemos los datos (atributos) del 1er día
+          const primerDia = variables.eq(0);
+          const data = primerDia.attr('data');
+          const tmin = primerDia.attr('tempmin');
+          const tmax = primerDia.attr('tempmax');
+
+          // Extraemos los datos (atributos) del 2do día
+          const segundoDia = variables.eq(1);
+          const data2 = segundoDia.attr('data');
+          const tmin2 = segundoDia.attr('tempmin');
+          const tmax2 = segundoDia.attr('tempmax');
+
+          // Actualizamos con los datos obtenidos del 1er día
+          $('#dataPrevisio').text(data);
+          $('#tmin').text(tmin);
+          $('#tmax').text(tmax);
+
+          // Actualizamos con los datos obtenidos del 2do día
+          $('#dataPrevisio2').text(data2);
+          $('#tmin2').text(tmin2);
+          $('#tmax2').text(tmax2);
+
+          // Mostramos el div con los resultados
+          resultDiv.show();
+
+        }).fail(function (error) {
+
+          // Mostrar error si es que falla la petición
+          alert('Error recuperant la previsió: ' + error.statusText);
+        });
+      });
+
+      // Llamar a la funció para cargar las comarcas
+      cargarComarques();
+    });
+  </script>
+</body>
+
+</html>

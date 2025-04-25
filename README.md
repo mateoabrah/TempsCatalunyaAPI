@@ -1,5 +1,7 @@
 Aplicación Meteorológica: El Temps
-El Temps es una aplicación web sencilla pero efectiva que muestra la previsión meteorológica de temperatura para las comarcas de Cataluña. Desarrollada con HTML, CSS y jQuery, esta aplicación consume datos en tiempo real de la API pública de Meteocat.
+
+El Temps es una aplicación web sencilla pero efectiva que muestra la previsión meteorológica de temperatura para las comarcas de Cataluña. 
+Desarrollada con HTML, CSS y jQuery, esta aplicación consume datos en tiempo real de la API pública de Meteocat.
 
 Características
 Interfaz minimalista con tema oscuro
